@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Convierte documentos Word (.docx) a Markdown. 100% privado, funciona en tu navegador.">
+    <title>Word to Markdown</title>
+    <link rel="stylesheet" href="../vendor/pico.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+    <!-- Barra superior -->
+    <nav class="container">
+        <ul>
+            <li><strong>Word to Markdown</strong></li>
+            <li><a href="../" class="nav-link">Excel</a></li>
+        </ul>
+        <ul>
+            <li><small id="status-msg" class="status-text">Listo</small></li>
+            <li><button id="convert-btn" class="btn-sm"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Convertir</button></li>
+            <li><button id="clear-btn" class="secondary outline btn-sm">Limpiar</button></li>
+            <li>
+                <label for="file-input" class="file-label">
+                    Subir .docx
+                    <input type="file" id="file-input" accept=".docx" hidden>
+                </label>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <div class="app-layout">
+
+            <!-- Columna izquierda: paste + output -->
+            <div class="main-col">
+
+                <!-- Zona de pegado -->
+                <div id="paste-zone" role="textbox" contenteditable="true" aria-label="Pega aqui contenido de Word" tabindex="0"></div>
+
+                <!-- Output -->
+                <section id="output-section" class="hidden">
+                    <div class="md-bar">
+                        <span class="md-bar-title">Markdown</span>
+                        <span class="md-bar-actions">
+                            <button id="copy-btn" class="btn-sm">Copiar</button>
+                            <button id="download-btn" class="secondary outline btn-sm">Descargar .md</button>
+                        </span>
+                    </div>
+                    <textarea id="markdown-output" spellcheck="false" readonly rows="18"></textarea>
+
+                    <details class="preview-details">
+                        <summary>Ver HTML intermedio</summary>
+                        <div id="preview-container" class="preview-scroll"></div>
+                    </details>
+                </section>
+            </div>
+
+            <!-- Columna derecha: configuracion -->
+            <aside class="config-col">
+                <h4 class="config-title">Configuracion</h4>
+
+                <fieldset>
+                    <legend>Encabezados</legend>
+                    <label><input type="radio" name="heading" value="atx" checked> # ATX (recomendado)</label>
+                    <label><input type="radio" name="heading" value="setext"> Subrayado (Setext)</label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Listas</legend>
+                    <label><input type="radio" name="bullet" value="-" checked> Guion (-)</label>
+                    <label><input type="radio" name="bullet" value="*"> Asterisco (*)</label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Links</legend>
+                    <label><input type="radio" name="linkStyle" value="inlined" checked> Inline [texto](url)</label>
+                    <label><input type="radio" name="linkStyle" value="referenced"> Referencia [texto][1]</label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Opciones</legend>
+                    <label><input type="checkbox" id="opt-gfm" checked> GitHub Flavored (GFM)</label>
+                    <label><input type="checkbox" id="opt-br"> Preservar saltos de linea</label>
+                </fieldset>
+            </aside>
+        </div>
+    </main>
+
+    <script src="../vendor/mammoth.browser.min.js"></script>
+    <script src="../vendor/turndown.js"></script>
+    <script src="../js/word-app.js"></script>
+</body>
+</html>

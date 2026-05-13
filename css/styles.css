@@ -310,3 +310,25 @@ textarea#markdown-output {
 /* ═══════════ UTILITY ═══════════ */
 
 .hidden { display: none !important; }
+
+/* ═══════════ NAVIGATION ═══════════ */
+
+.nav-link {
+    font-size: 0.85rem;
+    color: var(--pico-muted-color) !important;
+    text-decoration: none !important;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: 0.2rem 0.6rem;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+    color: var(--pico-color) !important;
+    border-color: var(--pico-primary) !important;
+}
+
+/* Word tool: placeholder text override */
+.word-paste #paste-zone:empty::before {
+    content: "Pega aqui contenido de Word (Ctrl+V / Cmd+V)";
+}
