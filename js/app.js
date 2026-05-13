@@ -1,10 +1,16 @@
 /**
- * app.js - Senior Frontend Orchestrator (Pretty-Print Version)
+ * app.js — Orquestador UI
+ *
+ * Flujo: el usuario pega datos → los ve en la zona de pegado →
+ * presiona Ctrl+Enter (o el botón) → se genera el Markdown.
+ * Los archivos se procesan automáticamente al cargarlos.
  */
+
 const App = {
     state: {
         sheets: [],
-        alignments: [],
+        lastPastedHtml: null,
+        lastPastedText: null,
         options: {
             hasHeader: true,
             compact: false,
@@ -21,197 +27,278 @@ const App = {
         this.initTheme();
     },
 
+    // ═══════ DOM Cache ═══════
     cache() {
-        this.body = document.body;
-        this.themeToggle = document.getElementById('theme-toggle');
-        this.pasteZone = document.getElementById('paste-zone');
-        this.fileInput = document.getElementById('file-input');
-        this.markdownArea = document.getElementById('markdown-output');
-        this.previewArea = document.getElementById('preview-container');
-        this.status = document.getElementById('status-msg');
-        this.copyBtn = document.getElementById('copy-btn');
-        this.downloadBtn = document.getElementById('download-btn');
+        this.root          = document.documentElement;
+        this.themeToggle   = document.getElementById('theme-toggle');
+        this.pasteZone     = document.getElementById('paste-zone');
+        this.convertBtn    = document.getElementById('convert-btn');
+        this.clearBtn      = document.getElementById('clear-btn');
+        this.fileInput     = document.getElementById('file-input');
+        this.markdownArea  = document.getElementById('markdown-output');
+        this.previewArea   = document.getElementById('preview-container');
+        this.status        = document.getElementById('status-msg');
+        this.copyBtn       = document.getElementById('copy-btn');
+        this.downloadBtn   = document.getElementById('download-btn');
         this.outputSection = document.getElementById('output-section');
-        
-        // Config Elements
-        this.optHeader = document.getElementById('opt-header');
-        this.optCompact = document.getElementById('opt-compact');
-        this.optMerges = document.getElementById('opt-merges');
-        this.optBlanks = document.getElementById('opt-blanks');
-        this.optPipeHtml = document.getElementById('opt-pipe-html');
+
+        this.optHeader     = document.getElementById('opt-header');
+        this.optCompact    = document.getElementById('opt-compact');
+        this.optMerges     = document.getElementById('opt-merges');
+        this.optBlanks     = document.getElementById('opt-blanks');
+        this.optPipeHtml   = document.getElementById('opt-pipe-html');
         this.optDateFormat = document.getElementById('opt-date-format');
-        
-        // Sheet Selector
-        this.sheetSelectorContainer = document.getElementById('sheet-selector-container');
+
+        this.sheetContainer  = document.getElementById('sheet-selector-container');
         this.sheetCheckboxes = document.getElementById('sheet-checkboxes');
     },
 
+    // ═══════ Event Binding ═══════
     bind() {
+        // Tema
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
-        window.addEventListener('paste', (e) => this.handlePaste(e), true);
+
+        // Paste: dejar que el contenteditable muestre los datos, guardar clipboard crudo
+        this.pasteZone.addEventListener('paste', (e) => {
+            this.state.lastPastedHtml = e.clipboardData.getData('text/html');
+            this.state.lastPastedText = e.clipboardData.getData('text/plain');
+            this.setStatus('Datos pegados. Presiona Ctrl+Enter para convertir.');
+        });
+
+        // Si el usuario edita manualmente, invalidar caché
+        this.pasteZone.addEventListener('input', () => {
+            this.state.lastPastedHtml = null;
+            this.state.lastPastedText = null;
+        });
+
+        // Ctrl+Enter / Cmd+Enter dentro del paste zone
+        this.pasteZone.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                this.convertFromPasteZone();
+            }
+        });
+
+        // Botón "Convertir"
+        this.convertBtn.addEventListener('click', () => this.convertFromPasteZone());
+
+        // Botón "Limpiar"
+        this.clearBtn.addEventListener('click', () => {
+            this.pasteZone.innerHTML = '';
+            this.outputSection.classList.add('hidden');
+            this.state.sheets = [];
+            this.state.lastPastedHtml = null;
+            this.state.lastPastedText = null;
+            this.setStatus('Listo');
+        });
+
+        // Archivo
         this.fileInput.addEventListener('change', (e) => this.handleFile(e.target.files[0]));
+
+        // Copiar y Descargar
         this.copyBtn.addEventListener('click', () => this.copyToClipboard());
         this.downloadBtn.addEventListener('click', () => this.downloadFile());
 
-        // Reactividad de Opciones
-        const configEls = [this.optHeader, this.optCompact, this.optMerges, this.optBlanks, this.optPipeHtml, this.optDateFormat];
-        configEls.forEach(el => {
-            el.addEventListener('change', () => {
-                this.updateOptions();
-                this.render();
-            });
-        });
+        // Reactividad de opciones
+        [this.optHeader, this.optCompact, this.optMerges, this.optBlanks, this.optPipeHtml, this.optDateFormat]
+            .forEach(el => el.addEventListener('change', () => { this.syncOptions(); this.render(); }));
     },
 
-    updateOptions() {
-        this.state.options = {
-            hasHeader: this.optHeader.checked,
-            compact: this.optCompact.checked,
-            repeatMerged: this.optMerges.checked,
-            preserveBlankRows: this.optBlanks.checked,
-            escapePipeHtml: this.optPipeHtml.checked,
-            dateFormat: this.optDateFormat.value
-        };
+    // ═══════ Tema ═══════
+    initTheme() {
+        const saved = localStorage.getItem('theme');
+        if (saved) {
+            this.root.setAttribute('data-theme', saved);
+        }
+        // Si no hay preferencia guardada, Pico CSS detecta el sistema automáticamente
+        this.updateThemeIcons();
     },
 
-    handlePaste(e) {
-        const text = e.clipboardData.getData('text/plain');
-        const html = e.clipboardData.getData('text/html');
+    toggleTheme() {
+        const current = this.root.getAttribute('data-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-        if (text && text.includes('\t')) {
-            e.preventDefault();
-            const { rows } = Converter.parseTsvString(text);
-            this.processResult({ sheets: [{ name: 'Pasted', rows, selected: true }] }, 'TSV');
-            return;
+        let next;
+        if (!current || current === 'auto') {
+            next = prefersDark ? 'light' : 'dark';
+        } else {
+            next = current === 'dark' ? 'light' : 'dark';
         }
 
+        this.root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        this.updateThemeIcons();
+    },
+
+    updateThemeIcons() {
+        const theme = this.root.getAttribute('data-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = theme === 'dark' || (!theme && prefersDark) || (theme === 'auto' && prefersDark);
+
+        document.getElementById('sun-icon').classList.toggle('hidden', !isDark);
+        document.getElementById('moon-icon').classList.toggle('hidden', isDark);
+    },
+
+    // ═══════ Conversión desde Paste Zone ═══════
+    convertFromPasteZone() {
+        const html = this.state.lastPastedHtml || this.pasteZone.innerHTML;
+        const text = this.state.lastPastedText || this.pasteZone.innerText;
+
+        // Prioridad 1: HTML con tabla
         if (html && html.includes('<table')) {
-            e.preventDefault();
             const result = Converter.parseTableHtml(html);
             if (result && result.rows.length > 0) {
-                this.processResult({ sheets: [{ name: 'Pasted HTML', rows: result.rows, selected: true, alignments: result.alignments }] }, 'HTML Rico');
+                this.processResult({
+                    sheets: [{ name: 'Paste', rows: result.rows, selected: true, alignments: result.alignments }]
+                }, 'HTML');
                 return;
             }
         }
+
+        // Prioridad 2: TSV (tabs)
+        if (text && text.includes('\t')) {
+            const { rows } = Converter.parseTsvString(text);
+            if (rows.length > 0) {
+                this.processResult({ sheets: [{ name: 'Paste', rows, selected: true }] }, 'TSV');
+                return;
+            }
+        }
+
+        // Fallback: texto plano separado por líneas
+        if (text && text.trim()) {
+            const rows = text.trim().split('\n').map(r => r.split('\t'));
+            this.processResult({ sheets: [{ name: 'Manual', rows, selected: true }] }, 'Texto');
+        } else {
+            this.setStatus('Pega datos de Excel primero.');
+        }
     },
 
+    // ═══════ Archivo ═══════
     handleFile(file) {
         if (!file) return;
-        this.status.innerText = `Cargando ${file.name}...`;
+        this.setStatus(`Procesando ${file.name}…`);
+
         const reader = new FileReader();
         reader.onload = (e) => {
             const data = new Uint8Array(e.target.result);
-            if (file.size > 2 * 1024 * 1024) this.useWorker(data);
-            else this.useInline(data);
+            if (file.size > 2 * 1024 * 1024) this.processViaWorker(data);
+            else this.processInline(data);
         };
         reader.readAsArrayBuffer(file);
     },
 
-    useInline(data) {
+    processInline(data) {
         try {
-            const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellNF: false, cellText: false, raw: false });
-            const sheets = workbook.SheetNames.map((name, i) => {
-                const sheet = workbook.Sheets[name];
-                if (this.state.options.repeatMerged && sheet['!merges']) {
-                    sheet['!merges'].forEach(m => {
-                        const val = sheet[XLSX.utils.encode_cell(m.s)];
-                        if (val) {
-                            for (let r = m.s.r; r <= m.e.r; r++) {
-                                for (let c = m.s.c; c <= m.e.c; c++) {
-                                    const ref = XLSX.utils.encode_cell({r, c});
-                                    if (!sheet[ref]) sheet[ref] = { ...val };
-                                }
+            const wb = XLSX.read(data, { type: 'array', cellDates: true, cellNF: false, cellText: false, raw: false });
+            const sheets = wb.SheetNames.map((name, i) => {
+                const ws = wb.Sheets[name];
+                // Propagar merges
+                if (this.state.options.repeatMerged && ws['!merges']) {
+                    for (const m of ws['!merges']) {
+                        const val = ws[XLSX.utils.encode_cell(m.s)];
+                        if (!val) continue;
+                        for (let r = m.s.r; r <= m.e.r; r++)
+                            for (let c = m.s.c; c <= m.e.c; c++) {
+                                const ref = XLSX.utils.encode_cell({ r, c });
+                                if (!ws[ref]) ws[ref] = { ...val };
                             }
-                        }
-                    });
+                    }
                 }
                 return {
                     name,
-                    rows: XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', blankrows: this.state.options.preserveBlankRows }),
+                    rows: XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', blankrows: this.state.options.preserveBlankRows }),
                     selected: i === 0
                 };
             });
             this.processResult({ sheets }, 'Excel');
         } catch (err) {
-            this.status.innerText = "Error: " + err.message;
+            this.setStatus(`Error: ${err.message}`);
         }
     },
 
-    useWorker(data) {
+    processViaWorker(data) {
         const worker = new Worker('js/worker.js');
         worker.postMessage({ data, options: this.state.options });
         worker.onmessage = (e) => {
             if (e.data.success) {
                 const sheets = e.data.result.sheets.map((s, i) => ({ ...s, selected: i === 0 }));
                 this.processResult({ sheets }, 'Worker');
-            } else this.status.innerText = "Error Worker: " + e.data.error;
+            } else {
+                this.setStatus(`Error Worker: ${e.data.error}`);
+            }
             worker.terminate();
         };
     },
 
+    // ═══════ Pipeline común ═══════
     processResult(result, source) {
         this.state.sheets = result.sheets.filter(s => s.rows.length > 0);
-        this.status.innerText = `Éxito. ${this.state.sheets.length} hoja(s) procesada(s) via ${source}.`;
+
+        if (!this.state.sheets.length) {
+            this.setStatus('No se encontraron datos.');
+            return;
+        }
+
+        const totalRows = this.state.sheets.reduce((n, s) => n + s.rows.length, 0);
+        this.setStatus(`${this.state.sheets.length} hoja(s), ${totalRows} filas — via ${source}`);
         this.outputSection.classList.remove('hidden');
         this.renderSheetSelector();
         this.render();
+
+        // Scroll suave al resultado
+        this.outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
 
+    // ═══════ Sheet selector ═══════
     renderSheetSelector() {
         if (this.state.sheets.length <= 1) {
-            this.sheetSelectorContainer.classList.add('hidden');
+            this.sheetContainer.classList.add('hidden');
             return;
         }
-        this.sheetSelectorContainer.classList.remove('hidden');
+        this.sheetContainer.classList.remove('hidden');
         this.sheetCheckboxes.innerHTML = '';
         this.state.sheets.forEach((sheet, i) => {
-            const label = document.createElement('label');
-            label.className = 'checkbox-label';
-            label.innerHTML = `<input type="checkbox" ${sheet.selected ? 'checked' : ''}> ${sheet.name}`;
-            label.querySelector('input').addEventListener('change', (e) => {
+            const lbl = document.createElement('label');
+            lbl.innerHTML = `<input type="checkbox" ${sheet.selected ? 'checked' : ''}> ${sheet.name}`;
+            lbl.querySelector('input').addEventListener('change', (e) => {
                 this.state.sheets[i].selected = e.target.checked;
                 this.render();
             });
-            this.sheetCheckboxes.appendChild(label);
+            this.sheetCheckboxes.appendChild(lbl);
         });
     },
 
+    // ═══════ Render ═══════
     render() {
         const selected = this.state.sheets.filter(s => s.selected);
-        if (!selected.length) {
-            this.markdownArea.value = '';
-            return;
-        }
+        if (!selected.length) { this.markdownArea.value = ''; this.previewArea.innerHTML = ''; return; }
 
         const mdParts = selected.map(sheet => {
-            const title = selected.length > 1 ? `## ${sheet.name}\n\n` : '';
-            return title + Converter.sheetToMarkdown(sheet.rows, {
+            const heading = selected.length > 1 ? `## ${sheet.name}\n\n` : '';
+            return heading + Converter.sheetToMarkdown(sheet.rows, {
                 ...this.state.options,
                 alignments: sheet.alignments || []
             });
         });
 
         this.markdownArea.value = mdParts.join('\n\n');
-        this.previewArea.innerHTML = this.renderPreview(selected[0].rows);
+        this.previewArea.innerHTML = this._previewHtml(selected[0].rows);
     },
 
-    renderPreview(rows) {
+    _previewHtml(rows) {
         const data = JSON.parse(JSON.stringify(rows));
-        const headers = this.state.options.hasHeader ? data.shift() : data[0].map((_, i) => `Col ${i + 1}`);
-        let html = '<table><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
-        data.slice(0, 10).forEach(row => {
-            html += '<tr>' + row.map(c => `<td>${c}</td>`).join('') + '</tr>';
-        });
-        html += '</tbody></table>';
-        if (data.length > 10) html += `<p style="font-size:12px; margin-top:10px; color:var(--accents-5)">Mostrando 10 de ${data.length} filas...</p>`;
-        return html;
+        const hdr = this.state.options.hasHeader ? data.shift() : data[0].map((_, i) => `Col ${i + 1}`);
+        const head = '<thead><tr>' + hdr.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
+        const body = '<tbody>' + data.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody>';
+        return `<table role="grid">${head}${body}</table>`;
     },
 
+    // ═══════ Actions ═══════
     copyToClipboard() {
         navigator.clipboard.writeText(this.markdownArea.value).then(() => {
-            const oldText = this.copyBtn.innerText;
-            this.copyBtn.innerText = "¡Copiado!";
-            setTimeout(() => this.copyBtn.innerText = oldText, 2000);
+            const orig = this.copyBtn.innerHTML;
+            this.copyBtn.textContent = '¡Copiado!';
+            setTimeout(() => this.copyBtn.innerHTML = orig, 2000);
         });
     },
 
@@ -220,26 +307,25 @@ const App = {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `excel_export_${new Date().getTime()}.md`;
+        a.download = `tabla_${Date.now()}.md`;
         a.click();
         URL.revokeObjectURL(url);
     },
 
-    initTheme() {
-        const dark = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        if (dark) this.body.classList.add('dark');
-        this.updateThemeIcons(dark);
+    // ═══════ Helpers ═══════
+    syncOptions() {
+        this.state.options = {
+            hasHeader:        this.optHeader.checked,
+            compact:          this.optCompact.checked,
+            repeatMerged:     this.optMerges.checked,
+            preserveBlankRows: this.optBlanks.checked,
+            escapePipeHtml:   this.optPipeHtml.checked,
+            dateFormat:       this.optDateFormat.value
+        };
     },
 
-    toggleTheme() {
-        const dark = this.body.classList.toggle('dark');
-        localStorage.setItem('theme', dark ? 'dark' : 'light');
-        this.updateThemeIcons(dark);
-    },
-
-    updateThemeIcons(dark) {
-        document.getElementById('sun-icon').classList.toggle('hidden', !dark);
-        document.getElementById('moon-icon').classList.toggle('hidden', dark);
+    setStatus(msg) {
+        this.status.textContent = msg;
     }
 };
 

@@ -1,170 +1,222 @@
 /**
- * converter.js - Ultra-High Fidelity Edition
- * Genera Markdown visualmente alineado (Pretty-Print).
+ * converter.js — Motor de conversión Excel → Markdown
+ *
+ * Genera tablas con alineación visual perfecta:
+ * las barras | quedan verticalmente alineadas
+ * y los delimitadores se expanden con guiones.
  */
 
 const Converter = {
-    /**
-     * Parser TSV RFC 4180 (Máquina de estados)
-     */
+
+    // ════════════════════════════════════════
+    // PARSER TSV — Máquina de estados RFC 4180
+    // ════════════════════════════════════════
     parseTsvString(text) {
         const rows = [];
-        let currentRow = [];
-        let currentCell = '';
+        let row = [];
+        let cell = '';
         let inQuotes = false;
-        const cleanText = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-        for (let i = 0; i < cleanText.length; i++) {
-            const char = cleanText[i];
-            const nextChar = cleanText[i + 1];
+        // Normalizar: quitar BOM y unificar saltos de línea
+        const src = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+        for (let i = 0; i < src.length; i++) {
+            const ch = src[i];
+            const next = src[i + 1];
 
             if (inQuotes) {
-                if (char === '"' && nextChar === '"') {
-                    currentCell += '"'; i++;
-                } else if (char === '"') inQuotes = false;
-                else currentCell += char;
+                if (ch === '"' && next === '"') { cell += '"'; i++; }
+                else if (ch === '"')             { inQuotes = false; }
+                else                             { cell += ch; }
             } else {
-                if (char === '"' && currentCell === '') inQuotes = true;
-                else if (char === '\t') { currentRow.push(currentCell); currentCell = ''; }
-                else if (char === '\n') { 
-                    currentRow.push(currentCell); rows.push(currentRow);
-                    currentRow = []; currentCell = '';
-                } else currentCell += char;
+                if (ch === '"' && cell === '') { inQuotes = true; }
+                else if (ch === '\t')          { row.push(cell); cell = ''; }
+                else if (ch === '\n')          { row.push(cell); rows.push(row); row = []; cell = ''; }
+                else                           { cell += ch; }
             }
         }
-        if (currentCell !== '' || currentRow.length > 0) { currentRow.push(currentCell); rows.push(currentRow); }
+        // Última celda/fila
+        if (cell !== '' || row.length > 0) { row.push(cell); rows.push(row); }
         return { rows };
     },
 
+    // ════════════════════════════════════════
+    // PARSER HTML — Extrae tabla del clipboard
+    // ════════════════════════════════════════
     parseTableHtml(htmlString) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlString, 'text/html');
+        const doc = new DOMParser().parseFromString(htmlString, 'text/html');
         const table = doc.querySelector('table');
         if (!table) return null;
 
         const rows = [];
-        const alignments = [];
-        const trs = Array.from(table.querySelectorAll('tr'));
+        const colAligns = [];
 
-        trs.forEach((tr, rowIndex) => {
+        for (const tr of table.querySelectorAll('tr')) {
             const row = [];
-            const cells = Array.from(tr.querySelectorAll('td, th'));
-            cells.forEach((cell, colIndex) => {
+            let colIdx = 0;
+            for (const cell of tr.querySelectorAll('td, th')) {
                 const colspan = parseInt(cell.getAttribute('colspan') || 1);
-                const content = this._extractRichText(cell);
-                
-                if (rowIndex === 0) {
-                    const style = cell.getAttribute('style') || '';
-                    const alignAttr = cell.getAttribute('align') || '';
-                    if (style.includes('text-align:right') || alignAttr === 'right') alignments[colIndex] = 'r';
-                    else if (style.includes('text-align:center') || alignAttr === 'center') alignments[colIndex] = 'c';
-                    else alignments[colIndex] = 'l';
+                const content = this._richText(cell);
+
+                // Capturar alineación de la primera fila
+                if (rows.length === 0) {
+                    const s = (cell.getAttribute('style') || '').replace(/\s/g, '');
+                    const a = cell.getAttribute('align') || '';
+                    if (s.includes('text-align:right')  || a === 'right')  colAligns[colIdx] = 'r';
+                    else if (s.includes('text-align:center') || a === 'center') colAligns[colIdx] = 'c';
+                    else colAligns[colIdx] = 'l';
                 }
-                for (let k = 0; k < colspan; k++) row.push(content);
-            });
-            if (row.length > 0) rows.push(row);
-        });
-        return { rows, alignments };
+                for (let k = 0; k < colspan; k++) { row.push(content); colIdx++; }
+            }
+            if (row.length) rows.push(row);
+        }
+        return { rows, alignments: colAligns };
     },
 
-    _extractRichText(cell) {
-        const clone = cell.cloneNode(true);
-        clone.querySelectorAll('meta, style, link, script').forEach(n => n.remove());
+    /** Extrae texto rico preservando negritas, links, etc. */
+    _richText(cell) {
+        const el = cell.cloneNode(true);
+        // Eliminar basura de MSO / Office
+        el.querySelectorAll('meta, style, link, script, o\\:p').forEach(n => n.remove());
 
-        const processNode = (node) => {
+        const walk = (node) => {
             if (node.nodeType === 3) return node.textContent;
             if (node.nodeType !== 1) return '';
-            let content = Array.from(node.childNodes).map(processNode).join('');
+            const inner = Array.from(node.childNodes).map(walk).join('');
             const tag = node.tagName.toLowerCase();
-            const style = node.getAttribute('style') || '';
-
-            if (tag === 'b' || tag === 'strong' || style.includes('font-weight:bold')) return `**${content.trim()}**`;
-            if (tag === 'i' || tag === 'em' || style.includes('font-style:italic')) return `*${content.trim()}*`;
-            if (tag === 'a' && node.href && !node.href.startsWith('javascript:')) return `[${content.trim()}](${node.href})`;
+            const sty = node.getAttribute('style') || '';
+            if (tag === 'b' || tag === 'strong' || sty.includes('font-weight:bold') || sty.includes('font-weight:700'))
+                return inner.trim() ? `**${inner.trim()}**` : '';
+            if (tag === 'i' || tag === 'em' || sty.includes('font-style:italic'))
+                return inner.trim() ? `*${inner.trim()}*` : '';
+            if (tag === 's' || tag === 'del' || tag === 'strike' || sty.includes('line-through'))
+                return inner.trim() ? `~~${inner.trim()}~~` : '';
+            if (tag === 'a') {
+                const href = node.getAttribute('href') || '';
+                if (href && !href.startsWith('javascript:') && !href.startsWith('data:') && inner.trim())
+                    return `[${inner.trim()}](${href})`;
+            }
+            if (tag === 'code' || tag === 'tt' || tag === 'kbd') return `\`${inner.trim()}\``;
             if (tag === 'br') return '\n';
-            return content;
+            return inner;
         };
-        return Array.from(clone.childNodes).map(processNode).join('').trim();
+        return Array.from(el.childNodes).map(walk).join('').trim();
     },
 
-    /**
-     * Generador Markdown con Alineación Vertical de Pipes
-     */
-    sheetToMarkdown(rows, options = {}) {
-        if (!rows || rows.length === 0) return '';
-        
-        // 1. Normalizar y Escapar
-        let data = rows.map(row => row.map(cell => this.escapeCell(cell, options)));
-        
-        // 2. Manejo de Headers
-        let headers = [];
-        if (options.hasHeader) headers = data.shift();
-        else headers = data[0].map((_, i) => `Column ${i + 1}`);
+    // ════════════════════════════════════════════
+    // GENERADOR MARKDOWN — Pretty-print alineado
+    // ════════════════════════════════════════════
+    sheetToMarkdown(rows, opts = {}) {
+        if (!rows || !rows.length) return '';
 
-        // 3. Determinar Alineaciones
-        const finalAlignments = headers.map((h, i) => {
-            if (options.alignments && options.alignments[i]) return options.alignments[i];
-            const numericCount = data.filter(row => row[i] && !isNaN(parseFloat(row[i].replace(/[$,]/g, ''))) && isFinite(row[i].replace(/[$,]/g, ''))).length;
-            return (numericCount / (data.length || 1)) > 0.6 ? 'r' : 'l';
+        // 1. Normalizar: cada celda a string escapado
+        const escaped = rows.map(r => r.map(c => this._escape(c, opts)));
+
+        // 2. Separar headers de data
+        let headers, data;
+        if (opts.hasHeader !== false) {
+            headers = escaped[0];
+            data = escaped.slice(1);
+        } else {
+            headers = escaped[0].map((_, i) => `Column ${i + 1}`);
+            data = escaped;
+        }
+
+        const numCols = headers.length;
+
+        // 3. Alineación por columna
+        const align = headers.map((_, i) => {
+            if (opts.alignments && opts.alignments[i]) return opts.alignments[i];
+            // Heurística: >60% numérico → derecha
+            let numCount = 0;
+            for (const row of data) {
+                const v = (row[i] || '').replace(/[$€£,% ]/g, '');
+                if (v && !isNaN(v)) numCount++;
+            }
+            return data.length && (numCount / data.length) > 0.6 ? 'r' : 'l';
         });
 
-        // 4. Calcular anchos de columna (incluyendo headers y delimitadores)
-        const colWidths = headers.map((h, i) => {
-            let max = String(h).length;
-            data.forEach(row => {
-                if (row[i]) max = Math.max(max, String(row[i]).length);
-            });
-            return Math.max(max, 3); // Mínimo 3 para '---'
+        // 4. Calcular ancho de cada columna
+        //    Mínimo 3 caracteres para que quepan los delimitadores
+        const widths = new Array(numCols).fill(3);
+        for (let i = 0; i < numCols; i++) {
+            widths[i] = Math.max(widths[i], headers[i].length);
+            for (const row of data) {
+                widths[i] = Math.max(widths[i], (row[i] || '').length);
+            }
+        }
+
+        // 5. Construir delimitadores con alineación expandida
+        const delims = align.map((a, i) => {
+            const w = widths[i];
+            if (a === 'r') return '-'.repeat(w - 1) + ':';
+            if (a === 'c') return ':' + '-'.repeat(w - 2) + ':';
+            return ':' + '-'.repeat(w - 1);
         });
 
-        // 5. Construir Delimitador Alineado
-        const delimiterRow = finalAlignments.map((a, i) => {
-            const width = colWidths[i];
-            if (a === 'r') return '-'.repeat(width) + ':';
-            if (a === 'c') return ':' + '-'.repeat(width - 1) + ':';
-            return ':' + '-'.repeat(width);
-        });
-
-        // 6. Formatear Filas
-        const formatRow = (row, isHeader = false) => {
-            const padded = row.map((c, i) => {
-                const s = String(c);
-                const align = isHeader ? 'l' : finalAlignments[i];
-                const width = colWidths[i] + (isHeader ? 0 : (finalAlignments[i] === 'l' ? 1 : 0));
-                
-                if (options.compact) return s;
-                
-                // Si es numérico (derecha), padStart. Si no, padEnd.
-                return align === 'r' ? s.padStart(colWidths[i], ' ') : s.padEnd(colWidths[i], ' ');
-            });
-            return `| ${padded.join(' | ')} |`;
+        // 6. Funciones de formato
+        const pad = (s, i) => {
+            if (opts.compact) return s;
+            const w = widths[i];
+            return align[i] === 'r'
+                ? s.padStart(w)
+                : s.padEnd(w);
         };
 
-        const formatDelimiter = (row) => {
-            return `| ${row.join(' | ')} |`;
+        const fmtRow = (cells) => {
+            const parts = cells.map((c, i) => ` ${pad(c || '', i)} `);
+            return '|' + parts.join('|') + '|';
         };
 
-        const result = [
-            formatRow(headers, true),
-            formatDelimiter(delimiterRow),
-            ...data.map(row => formatRow(row))
+        const fmtDelim = () => {
+            if (opts.compact) return '| ' + delims.join(' | ') + ' |';
+            const parts = delims.map((d, i) => ` ${d.padEnd(widths[i])} `);
+            return '|' + parts.join('|') + '|';
+        };
+
+        // 7. Ensamblar
+        const lines = [
+            fmtRow(headers),
+            fmtDelim(),
+            ...data.map(r => fmtRow(r))
         ];
 
-        return result.join('\n');
+        return lines.join('\n');
     },
 
-    escapeCell(val, options) {
+    /** Escapa una celda para GFM */
+    _escape(val, opts) {
         if (val === null || val === undefined) return '';
-        if (val instanceof Date) {
-            const y = val.getUTCFullYear(), m = String(val.getUTCMonth()+1).padStart(2,'0'), d = String(val.getUTCDate()).padStart(2,'0');
-            if (options.dateFormat === 'DD/MM/YYYY') return `${d}/${m}/${y}`;
+
+        // Fechas
+        if (val instanceof Date && !isNaN(val)) {
+            const y = val.getUTCFullYear();
+            const m = String(val.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(val.getUTCDate()).padStart(2, '0');
+            const fmt = opts.dateFormat || 'YYYY-MM-DD';
+            if (fmt === 'DD/MM/YYYY') return `${d}/${m}/${y}`;
+            if (fmt === 'MM/DD/YYYY') return `${m}/${d}/${y}`;
             return `${y}-${m}-${d}`;
         }
-        let str = String(val).replace(/\r?\n/g, ' <br> ');
-        const pipe = options.escapePipeHtml ? '&#124;' : '\\|';
-        str = str.replace(/\|/g, pipe);
-        if (str.endsWith('\\')) str += ' ';
-        return str.trim();
+
+        let s = String(val);
+
+        // Saltos de línea → <br>
+        s = s.replace(/\r?\n/g, ' <br> ');
+
+        // Pipes
+        s = s.replace(/\|/g, opts.escapePipeHtml ? '&#124;' : '\\|');
+
+        // Bug GFM: backslash al final de celda escapa el pipe siguiente
+        if (s.endsWith('\\')) s += ' ';
+
+        // Tabs → espacios
+        s = s.replace(/\t/g, '    ');
+
+        // Eliminar caracteres de control excepto los ya tratados
+        s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
+        return s.trim();
     }
 };
 

@@ -1,283 +1,207 @@
+/* ═══════════════════════════════════════
+   Overrides para Pico CSS
+   Paleta: blanco y negro puro, sin colores
+   ═══════════════════════════════════════ */
+
+/* Forzar monocromo: sin colores de acento */
 :root {
-    /* Vercel Light Theme */
-    --bg: #ffffff;
-    --accents-1: #fafafa;
-    --accents-2: #eaeaea;
-    --accents-3: #999999;
-    --accents-4: #888888;
-    --accents-5: #666666;
-    --accents-6: #444444;
-    --accents-7: #333333;
-    --accents-8: #111111;
-    --foreground: #000000;
-    --border: var(--accents-2);
-    --radius: 8px;
-    --shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08);
+    --pico-primary: #000;
+    --pico-primary-hover: #333;
+    --pico-primary-focus: rgba(0,0,0,0.125);
+    --pico-primary-inverse: #fff;
 }
 
-/* El tema oscuro se aplica si el sistema lo prefiere O si la clase .dark está presente */
-@media (prefers-color-scheme: dark) {
-    :root:not(.light) {
-        --bg: #000000;
-        --accents-1: #111111;
-        --accents-2: #333333;
-        --accents-3: #444444;
-        --accents-4: #666666;
-        --accents-5: #888888;
-        --accents-6: #999999;
-        --accents-7: #eaeaea;
-        --accents-8: #fafafa;
-        --foreground: #ffffff;
-        --border: var(--accents-2);
-        --shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 2px 4px rgba(0,0,0,0.4);
-    }
+[data-theme="dark"] {
+    --pico-primary: #fff;
+    --pico-primary-hover: #ccc;
+    --pico-primary-focus: rgba(255,255,255,0.125);
+    --pico-primary-inverse: #000;
 }
 
-.dark {
-    --bg: #000000;
-    --accents-1: #111111;
-    --accents-2: #333333;
-    --accents-3: #444444;
-    --accents-4: #666666;
-    --accents-5: #888888;
-    --accents-6: #999999;
-    --accents-7: #eaeaea;
-    --accents-8: #fafafa;
-    --foreground: #ffffff;
-    --border: var(--accents-2);
-    --shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 2px 4px rgba(0,0,0,0.4);
+/* ── Paste zone ── */
+#paste-zone {
+    min-height: 80px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    outline: none;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    word-break: break-word;
+    transition: border-color 0.15s;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Geist", sans-serif;
-    background-color: var(--bg);
-    color: var(--foreground);
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    transition: background-color 0.3s ease, color 0.3s ease;
+#paste-zone:focus {
+    border-color: var(--pico-primary);
 }
 
-.container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 2rem;
+#paste-zone:empty::before {
+    content: "Pega aqui datos de Excel (Ctrl+V)";
+    color: var(--pico-muted-color);
+    font-style: italic;
 }
 
-/* Header al estilo Vercel */
-.main-header {
-    margin-bottom: 4rem;
+/* Forzar color del tema en todo el contenido pegado.
+   Excel pega con style="color:#000" que es invisible en modo oscuro. */
+#paste-zone * {
+    color: var(--pico-color) !important;
+    background: transparent !important;
 }
 
-.header-flex {
+/* Evitar desbordamiento de tablas pegadas dentro del paste zone */
+#paste-zone table {
+    width: 100%;
+    table-layout: fixed;
+    font-size: 0.75rem;
+}
+#paste-zone td, #paste-zone th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+}
+
+.paste-card {
+    margin-bottom: 1rem;
+}
+
+.paste-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 0.5rem;
+    gap: 0.5rem;
 }
 
-.theme-btn {
-    background: var(--bg);
-    border: 1px solid var(--border);
+.action-right {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* ── Botones compactos ── */
+.btn-sm {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+    margin-bottom: 0;
+    height: auto;
+}
+
+#convert-btn {
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+
+.file-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    cursor: pointer;
+    color: var(--pico-muted-color);
+    transition: border-color 0.15s, color 0.15s;
+    margin-bottom: 0;
+}
+
+.file-label:hover {
+    border-color: var(--pico-primary);
+    color: var(--pico-color);
+}
+
+/* ── Theme toggle ── */
+.icon-btn {
+    background: none;
+    border: 1px solid var(--pico-muted-border-color);
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--foreground);
-    transition: all 0.2s ease;
+    color: var(--pico-color);
 }
 
-.theme-btn:hover {
-    border-color: var(--foreground);
+.icon-btn:hover {
+    border-color: var(--pico-primary);
 }
 
-.theme-btn svg {
-    width: 20px;
-    height: 20px;
-}
+.icon { width: 18px; height: 18px; }
+.status-text { color: var(--pico-muted-color); white-space: nowrap; }
 
-h1 {
-    font-size: 3rem;
-    font-weight: 800;
-    letter-spacing: -0.05em;
+/* ── Markdown output ── */
+.md-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.5rem;
 }
 
-.subtitle {
-    color: var(--accents-5);
-    font-size: 1.2rem;
-}
-
-/* Status Bar */
-.status-msg {
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 2rem;
-    font-size: 0.85rem;
-    background: var(--accents-1);
-}
-
-/* Input Section */
-.input-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 3rem;
-}
-
-.paste-zone {
-    width: 100%;
-    min-height: 120px;
-    padding: 2rem;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    outline: none;
-    transition: border-color 0.2s ease;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accents-5);
-}
-
-.paste-zone:focus {
-    border-color: var(--foreground);
-}
-
-.paste-zone:empty::before {
-    content: "Pulsa Cmd+V o Ctrl+V para convertir datos de Excel";
-}
-
-.dropzone {
-    border: 1px dashed var(--border);
-    padding: 1.5rem;
-    text-align: center;
-    border-radius: var(--radius);
-    font-size: 0.9rem;
-    color: var(--accents-5);
-    cursor: pointer;
-}
-
-.dropzone:hover {
-    border-color: var(--foreground);
-    color: var(--foreground);
-}
-
-/* Botones Vercel */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 1.5rem;
-    height: 40px;
-    border-radius: var(--radius);
-    font-weight: 500;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-primary {
-    background: var(--foreground);
-    color: var(--bg);
-    border: 1px solid var(--foreground);
-}
-
-.btn-primary:hover {
-    background: var(--bg);
-    color: var(--foreground);
-}
-
-.btn-secondary {
-    background: var(--bg);
-    color: var(--accents-5);
-    border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-    border-color: var(--foreground);
-    color: var(--foreground);
-}
-
-/* Options */
-.options-panel {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 3rem;
-    overflow: hidden;
-}
-
-.options-panel summary {
-    padding: 1rem;
+.md-bar-title {
     font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    background: var(--accents-1);
-    list-style: none;
+    font-size: 0.9rem;
 }
 
-.options-grid {
-    padding: 1.5rem;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1rem;
-    background: var(--bg);
+.md-bar-actions {
+    display: flex;
+    gap: 0.4rem;
 }
 
-/* Output Area */
-.output-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-}
-
-textarea {
+textarea#markdown-output {
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    resize: vertical;
     width: 100%;
-    height: 300px;
-    background: var(--accents-1);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--foreground);
-    outline: none;
+    overflow-x: auto;
+    white-space: pre;
+    word-break: keep-all;
 }
 
-textarea:focus { border-color: var(--foreground); }
+/* ── Preview ── */
+.preview-details {
+    margin-top: 0.75rem;
+}
 
 .preview-scroll {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
     overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
+.preview-scroll table {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* ── Options ── */
+.options-inner {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.options-inner fieldset { margin-bottom: 0; }
+
+.options-inner legend {
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pico-muted-color);
+}
+
+.options-inner label {
     font-size: 0.85rem;
+    margin-bottom: 0.15rem;
 }
 
-th {
-    text-align: left;
-    padding: 0.75rem;
-    border-bottom: 2px solid var(--border);
-    color: var(--accents-5);
-}
-
-td {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border);
-}
-
+/* ── Utility ── */
 .hidden { display: none !important; }
-
-@media (min-width: 768px) {
-    .output-grid { grid-template-columns: 1fr 1fr; }
-}
