@@ -193,38 +193,98 @@ const WordApp = {
         this.outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
 
-    // ═══════ Tabla HTML → Markdown ═══════
+    // ═══════ Tabla HTML → Markdown (Pretty-Print) ═══════
     tableToMarkdown(tableNode) {
         const rows = [];
+
         for (const tr of tableNode.querySelectorAll('tr')) {
             const cells = [];
             for (const cell of tr.querySelectorAll('td, th')) {
-                cells.push(cell.textContent.replace(/\|/g, '\\|').replace(/\n/g, ' ').trim());
+                const colspan = parseInt(cell.getAttribute('colspan') || 1);
+                // Extraer texto profundo, ignorando toda la basura de Word
+                let text = this.deepText(cell);
+                text = text.replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
+                cells.push(text);
+                // Expandir colspan con celdas vacias
+                for (let k = 1; k < colspan; k++) cells.push('');
             }
-            if (cells.length > 0) rows.push(cells);
+            if (cells.some(c => c !== '')) rows.push(cells);
         }
 
         if (rows.length === 0) return '';
 
-        // Calcular anchos para alineacion
+        // Normalizar: todas las filas deben tener el mismo numero de columnas
         const numCols = Math.max(...rows.map(r => r.length));
+        for (const row of rows) {
+            while (row.length < numCols) row.push('');
+        }
+
+        // Calcular anchos (minimo 3 para delimitadores)
         const widths = new Array(numCols).fill(3);
         for (const row of rows) {
-            for (let i = 0; i < row.length; i++) {
-                widths[i] = Math.max(widths[i], row[i].length);
+            for (let i = 0; i < numCols; i++) {
+                widths[i] = Math.max(widths[i], (row[i] || '').length);
             }
         }
 
+        // Detectar alineacion por tipo de dato
+        const aligns = new Array(numCols).fill('l');
+        for (let i = 0; i < numCols; i++) {
+            let numCount = 0;
+            const dataRows = rows.slice(1);
+            for (const row of dataRows) {
+                const v = (row[i] || '').replace(/[$€£,%\s]/g, '');
+                if (v && !isNaN(v)) numCount++;
+            }
+            if (dataRows.length && (numCount / dataRows.length) > 0.6) aligns[i] = 'r';
+        }
+
+        // Formatear fila con padding
         const fmtRow = (cells) => {
-            const padded = cells.map((c, i) => (c || '').padEnd(widths[i] || 3));
+            const padded = cells.map((c, i) => {
+                const s = c || '';
+                const w = widths[i];
+                return aligns[i] === 'r' ? s.padStart(w) : s.padEnd(w);
+            });
             return '| ' + padded.join(' | ') + ' |';
         };
 
+        // Delimitadores con alineacion
+        const sep = '| ' + aligns.map((a, i) => {
+            const w = widths[i];
+            if (a === 'r') return '-'.repeat(w - 1) + ':';
+            if (a === 'c') return ':' + '-'.repeat(w - 2) + ':';
+            return ':' + '-'.repeat(w - 1);
+        }).join(' | ') + ' |';
+
         const header = fmtRow(rows[0]);
-        const sep = '| ' + widths.map(w => '-'.repeat(w)).join(' | ') + ' |';
         const body = rows.slice(1).map(r => fmtRow(r));
 
         return [header, sep, ...body].join('\n');
+    },
+
+    /** Extraer texto limpio de un nodo, recursivamente */
+    deepText(node) {
+        if (node.nodeType === 3) return node.textContent;
+        if (node.nodeType !== 1) return '';
+
+        const tag = node.tagName.toLowerCase();
+
+        // Ignorar elementos invisibles de Office
+        if (['style', 'script', 'meta', 'link'].includes(tag)) return '';
+        if (tag === 'br') return ' ';
+
+        const inner = Array.from(node.childNodes).map(n => this.deepText(n)).join('');
+
+        if (tag === 'b' || tag === 'strong') return inner.trim() ? `**${inner.trim()}**` : '';
+        if (tag === 'i' || tag === 'em') return inner.trim() ? `*${inner.trim()}*` : '';
+        if (tag === 'a') {
+            const href = node.getAttribute('href') || '';
+            if (href && !href.startsWith('javascript:') && !href.startsWith('file:') && inner.trim())
+                return `[${inner.trim()}](${href})`;
+        }
+
+        return inner;
     },
 
     // ═══════ Limpiar HTML de Office ═══════
@@ -233,27 +293,50 @@ const WordApp = {
         const doc = parser.parseFromString(html, 'text/html');
 
         // Eliminar elementos basura de Microsoft Office
-        doc.querySelectorAll('meta, style, link, script, xml, o\\:p, o\\:SmartTagType').forEach(n => n.remove());
+        const junk = 'meta, style, link, script, xml, title, head';
+        doc.querySelectorAll(junk).forEach(n => n.remove());
 
-        // Eliminar comentarios condicionales de IE
-        const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_COMMENT);
-        const comments = [];
-        while (walker.nextNode()) comments.push(walker.currentNode);
-        comments.forEach(c => c.parentNode.removeChild(c));
-
-        // Eliminar atributos de estilo de Office (class="MsoNormal", etc.)
-        doc.querySelectorAll('[class^="Mso"]').forEach(el => {
-            el.removeAttribute('class');
+        // Eliminar elementos con namespace de Office (o:p, v:shape, etc.)
+        doc.querySelectorAll('*').forEach(el => {
+            if (el.tagName.includes(':')) el.remove();
         });
 
-        // Limpiar spans vacios
+        // Eliminar comentarios condicionales de IE
+        const walker = doc.createTreeWalker(doc.body || doc.documentElement, NodeFilter.SHOW_COMMENT);
+        const comments = [];
+        while (walker.nextNode()) comments.push(walker.currentNode);
+        comments.forEach(c => c.parentNode && c.parentNode.removeChild(c));
+
+        // Limpiar clases MSO y estilos inline de Word
+        doc.querySelectorAll('*').forEach(el => {
+            el.removeAttribute('class');
+            // Mantener solo align en celdas de tabla
+            if (!['td', 'th'].includes(el.tagName.toLowerCase())) {
+                el.removeAttribute('style');
+            }
+        });
+
+        // Limpiar spans vacios que Word mete por todas partes
         doc.querySelectorAll('span').forEach(span => {
-            if (!span.textContent.trim() && span.querySelectorAll('img, br').length === 0) {
+            if (!span.textContent.trim() && !span.querySelector('img, br')) {
                 span.remove();
             }
         });
 
-        return doc.body.innerHTML;
+        // Eliminar links a archivos locales (file:///)
+        doc.querySelectorAll('a[href^="file:"]').forEach(a => {
+            a.replaceWith(a.textContent);
+        });
+
+        // Eliminar imagenes con rutas locales
+        doc.querySelectorAll('img').forEach(img => {
+            const src = img.getAttribute('src') || '';
+            if (src.startsWith('file:') || src.includes('msohtmlclip')) {
+                img.remove();
+            }
+        });
+
+        return (doc.body || doc.documentElement).innerHTML;
     },
 
     // ═══════ Opciones de Turndown ═══════
