@@ -328,7 +328,34 @@ textarea#markdown-output {
     border-color: var(--pico-primary) !important;
 }
 
+/* ═══════════ TOOL IDENTITY ═══════════ */
+
+/* Excel = verde */
+[data-tool="excel"] nav {
+    border-top: 3px solid #217346;
+}
+[data-tool="excel"] nav strong {
+    color: #217346 !important;
+}
+
+/* Word = azul */
+[data-tool="word"] nav {
+    border-top: 3px solid #2B579A;
+}
+[data-tool="word"] nav strong {
+    color: #2B579A !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    [data-tool="excel"] nav strong {
+        color: #33C264 !important;
+    }
+    [data-tool="word"] nav strong {
+        color: #5B9BD5 !important;
+    }
+}
+
 /* Word tool: placeholder text override */
-.word-paste #paste-zone:empty::before {
+[data-tool="word"] #paste-zone:empty::before {
     content: "Pega aqui contenido de Word (Ctrl+V / Cmd+V)";
 }
