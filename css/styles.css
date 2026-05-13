@@ -1,27 +1,186 @@
 /* ═══════════════════════════════════════
    Overrides para Pico CSS
-   Paleta: blanco y negro puro, sin colores
+   Paleta: BLANCO y NEGRO puro
+   Tema: deteccion automatica del SO
+   !important para ganarle a Pico CSS
    ═══════════════════════════════════════ */
 
-/* Forzar monocromo: sin colores de acento */
+/* ── TEMA CLARO (default) ── */
 :root {
-    --pico-primary: #000;
-    --pico-primary-hover: #333;
-    --pico-primary-focus: rgba(0,0,0,0.125);
-    --pico-primary-inverse: #fff;
+    --pico-background-color: #fff !important;
+    --pico-color: #000 !important;
+    --pico-h1-color: #000 !important;
+    --pico-h2-color: #000 !important;
+    --pico-h3-color: #000 !important;
+    --pico-h4-color: #000 !important;
+    --pico-muted-color: #666 !important;
+    --pico-muted-border-color: #ccc !important;
+    --pico-primary: #000 !important;
+    --pico-primary-hover: #333 !important;
+    --pico-primary-focus: rgba(0,0,0,0.1) !important;
+    --pico-primary-inverse: #fff !important;
+    --pico-primary-background: #000 !important;
+    --pico-primary-border: #000 !important;
+    --pico-primary-underline: #000 !important;
+    --pico-secondary: #555 !important;
+    --pico-secondary-hover: #000 !important;
+    --pico-secondary-focus: rgba(0,0,0,0.1) !important;
+    --pico-secondary-inverse: #fff !important;
+    --pico-contrast: #000 !important;
+    --pico-contrast-hover: #333 !important;
+    --pico-contrast-focus: rgba(0,0,0,0.1) !important;
+    --pico-contrast-inverse: #fff !important;
+    --pico-mark-background-color: #ddd !important;
+    --pico-mark-color: #000 !important;
+    --pico-table-border-color: #ddd !important;
+    --pico-table-row-stripped-background-color: #f8f8f8 !important;
+    --pico-card-background-color: #fff !important;
+    --pico-card-border-color: #ddd !important;
+    --pico-card-box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+    --pico-card-sectioning-background-color: #fafafa !important;
+    --pico-form-element-background-color: #fff !important;
+    --pico-form-element-border-color: #ccc !important;
+    --pico-form-element-color: #000 !important;
+    --pico-form-element-focus-color: #000 !important;
+    --pico-form-element-placeholder-color: #999 !important;
+    --pico-form-element-active-background-color: #fff !important;
+    --pico-form-element-active-border-color: #000 !important;
+    --pico-switch-background-color: #ccc !important;
+    --pico-switch-checked-background-color: #000 !important;
+    --pico-switch-color: #fff !important;
+    --pico-code-background-color: #f5f5f5 !important;
+    --pico-code-color: #000 !important;
+    --pico-code-kbd-background-color: #eee !important;
+    --pico-code-kbd-color: #000 !important;
+    --pico-nav-border-color: #ddd !important;
+    --pico-tooltip-background-color: #000 !important;
+    --pico-tooltip-color: #fff !important;
+    color-scheme: light dark;
 }
 
-[data-theme="dark"] {
-    --pico-primary: #fff;
-    --pico-primary-hover: #ccc;
-    --pico-primary-focus: rgba(255,255,255,0.125);
-    --pico-primary-inverse: #000;
+/* ── TEMA OSCURO: auto-detectado del SO ── */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --pico-background-color: #000 !important;
+        --pico-color: #fff !important;
+        --pico-h1-color: #fff !important;
+        --pico-h2-color: #fff !important;
+        --pico-h3-color: #fff !important;
+        --pico-h4-color: #fff !important;
+        --pico-muted-color: #999 !important;
+        --pico-muted-border-color: #444 !important;
+        --pico-primary: #fff !important;
+        --pico-primary-hover: #ccc !important;
+        --pico-primary-focus: rgba(255,255,255,0.1) !important;
+        --pico-primary-inverse: #000 !important;
+        --pico-primary-background: #fff !important;
+        --pico-primary-border: #fff !important;
+        --pico-primary-underline: #fff !important;
+        --pico-secondary: #aaa !important;
+        --pico-secondary-hover: #fff !important;
+        --pico-secondary-focus: rgba(255,255,255,0.1) !important;
+        --pico-secondary-inverse: #000 !important;
+        --pico-contrast: #fff !important;
+        --pico-contrast-hover: #ccc !important;
+        --pico-contrast-focus: rgba(255,255,255,0.1) !important;
+        --pico-contrast-inverse: #000 !important;
+        --pico-mark-background-color: #333 !important;
+        --pico-mark-color: #fff !important;
+        --pico-table-border-color: #333 !important;
+        --pico-table-row-stripped-background-color: #111 !important;
+        --pico-card-background-color: #111 !important;
+        --pico-card-border-color: #333 !important;
+        --pico-card-box-shadow: 0 1px 3px rgba(255,255,255,0.04) !important;
+        --pico-card-sectioning-background-color: #111 !important;
+        --pico-form-element-background-color: #111 !important;
+        --pico-form-element-border-color: #444 !important;
+        --pico-form-element-color: #fff !important;
+        --pico-form-element-focus-color: #fff !important;
+        --pico-form-element-placeholder-color: #666 !important;
+        --pico-form-element-active-background-color: #111 !important;
+        --pico-form-element-active-border-color: #fff !important;
+        --pico-switch-background-color: #444 !important;
+        --pico-switch-checked-background-color: #fff !important;
+        --pico-switch-color: #000 !important;
+        --pico-code-background-color: #181818 !important;
+        --pico-code-color: #fff !important;
+        --pico-code-kbd-background-color: #222 !important;
+        --pico-code-kbd-color: #fff !important;
+        --pico-nav-border-color: #333 !important;
+        --pico-tooltip-background-color: #fff !important;
+        --pico-tooltip-color: #000 !important;
+    }
 }
 
-/* ── Paste zone ── */
+/* ═══════════ LAYOUT ═══════════ */
+
+.app-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .app-layout {
+        grid-template-columns: 1fr 240px;
+    }
+}
+
+/* ── Columna principal ── */
+.main-col {
+    min-width: 0; /* prevenir desbordamiento en grid */
+}
+
+/* ── Panel de configuracion (derecha) ── */
+.config-col {
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: 1rem;
+    align-self: start;
+}
+
+.config-title {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.config-col fieldset {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.config-col fieldset:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.config-col legend {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pico-muted-color);
+    margin-bottom: 0.4rem;
+}
+
+.config-col label {
+    font-size: 0.8rem;
+    margin-bottom: 0.15rem;
+}
+
+.config-col select {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+    margin-bottom: 0;
+}
+
+/* ═══════════ PASTE ZONE ═══════════ */
+
 #paste-zone {
-    min-height: 80px;
-    max-height: 200px;
+    min-height: 100px;
+    max-height: 250px;
     overflow-y: auto;
     padding: 0.75rem 1rem;
     border: 1px solid var(--pico-muted-border-color);
@@ -31,6 +190,7 @@
     line-height: 1.5;
     word-break: break-word;
     transition: border-color 0.15s;
+    margin-bottom: 1rem;
 }
 
 #paste-zone:focus {
@@ -38,24 +198,23 @@
 }
 
 #paste-zone:empty::before {
-    content: "Pega aqui datos de Excel (Ctrl+V)";
+    content: "Pega aqui datos de Excel (Ctrl+V / Cmd+V)";
     color: var(--pico-muted-color);
     font-style: italic;
 }
 
-/* Forzar color del tema en todo el contenido pegado.
-   Excel pega con style="color:#000" que es invisible en modo oscuro. */
+/* Forzar color del tema en contenido pegado de Excel */
 #paste-zone * {
     color: var(--pico-color) !important;
     background: transparent !important;
 }
 
-/* Evitar desbordamiento de tablas pegadas dentro del paste zone */
 #paste-zone table {
     width: 100%;
     table-layout: fixed;
     font-size: 0.75rem;
 }
+
 #paste-zone td, #paste-zone th {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -63,36 +222,13 @@
     max-width: 120px;
 }
 
-.paste-card {
-    margin-bottom: 1rem;
-}
+/* ═══════════ NAV BUTTONS ═══════════ */
 
-.paste-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0.5rem;
-    gap: 0.5rem;
-}
-
-.action-right {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-/* ── Botones compactos ── */
 .btn-sm {
     padding: 0.3rem 0.7rem;
     font-size: 0.8rem;
     margin-bottom: 0;
     height: auto;
-}
-
-#convert-btn {
-    padding: 0.4rem 1rem;
-    font-size: 0.85rem;
-    margin-bottom: 0;
 }
 
 .file-label {
@@ -113,29 +249,13 @@
     color: var(--pico-color);
 }
 
-/* ── Theme toggle ── */
-.icon-btn {
-    background: none;
-    border: 1px solid var(--pico-muted-border-color);
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--pico-color);
+.status-text {
+    color: var(--pico-muted-color);
+    white-space: nowrap;
 }
 
-.icon-btn:hover {
-    border-color: var(--pico-primary);
-}
+/* ═══════════ MARKDOWN OUTPUT ═══════════ */
 
-.icon { width: 18px; height: 18px; }
-.status-text { color: var(--pico-muted-color); white-space: nowrap; }
-
-/* ── Markdown output ── */
 .md-bar {
     display: flex;
     justify-content: space-between;
@@ -153,6 +273,12 @@
     gap: 0.4rem;
 }
 
+.md-bar-actions button {
+    margin-bottom: 0;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+}
+
 textarea#markdown-output {
     font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
     font-size: 0.75rem;
@@ -164,7 +290,8 @@ textarea#markdown-output {
     word-break: keep-all;
 }
 
-/* ── Preview ── */
+/* ═══════════ PREVIEW ═══════════ */
+
 .preview-details {
     margin-top: 0.75rem;
 }
@@ -180,28 +307,6 @@ textarea#markdown-output {
     white-space: nowrap;
 }
 
-/* ── Options ── */
-.options-inner {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    align-items: start;
-}
+/* ═══════════ UTILITY ═══════════ */
 
-.options-inner fieldset { margin-bottom: 0; }
-
-.options-inner legend {
-    font-weight: 600;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--pico-muted-color);
-}
-
-.options-inner label {
-    font-size: 0.85rem;
-    margin-bottom: 0.15rem;
-}
-
-/* ── Utility ── */
 .hidden { display: none !important; }

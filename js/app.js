@@ -24,13 +24,10 @@ const App = {
     init() {
         this.cache();
         this.bind();
-        this.initTheme();
     },
 
     // ═══════ DOM Cache ═══════
     cache() {
-        this.root          = document.documentElement;
-        this.themeToggle   = document.getElementById('theme-toggle');
         this.pasteZone     = document.getElementById('paste-zone');
         this.convertBtn    = document.getElementById('convert-btn');
         this.clearBtn      = document.getElementById('clear-btn');
@@ -55,9 +52,6 @@ const App = {
 
     // ═══════ Event Binding ═══════
     bind() {
-        // Tema
-        this.themeToggle.addEventListener('click', () => this.toggleTheme());
-
         // Paste: dejar que el contenteditable muestre los datos, guardar clipboard crudo
         this.pasteZone.addEventListener('paste', (e) => {
             this.state.lastPastedHtml = e.clipboardData.getData('text/html');
@@ -104,40 +98,6 @@ const App = {
             .forEach(el => el.addEventListener('change', () => { this.syncOptions(); this.render(); }));
     },
 
-    // ═══════ Tema ═══════
-    initTheme() {
-        const saved = localStorage.getItem('theme');
-        if (saved) {
-            this.root.setAttribute('data-theme', saved);
-        }
-        // Si no hay preferencia guardada, Pico CSS detecta el sistema automáticamente
-        this.updateThemeIcons();
-    },
-
-    toggleTheme() {
-        const current = this.root.getAttribute('data-theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        let next;
-        if (!current || current === 'auto') {
-            next = prefersDark ? 'light' : 'dark';
-        } else {
-            next = current === 'dark' ? 'light' : 'dark';
-        }
-
-        this.root.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        this.updateThemeIcons();
-    },
-
-    updateThemeIcons() {
-        const theme = this.root.getAttribute('data-theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = theme === 'dark' || (!theme && prefersDark) || (theme === 'auto' && prefersDark);
-
-        document.getElementById('sun-icon').classList.toggle('hidden', !isDark);
-        document.getElementById('moon-icon').classList.toggle('hidden', isDark);
-    },
 
     // ═══════ Conversión desde Paste Zone ═══════
     convertFromPasteZone() {

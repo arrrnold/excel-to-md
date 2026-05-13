@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="auto">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,70 +10,66 @@
 </head>
 <body>
 
-    <!-- Nav compacto -->
+    <!-- Barra superior: titulo + acciones -->
     <nav class="container-fluid">
         <ul><li><strong>Excel to Markdown</strong></li></ul>
         <ul>
             <li><small id="status-msg" class="status-text">Listo</small></li>
+            <li><button id="convert-btn" class="btn-sm"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Convertir</button></li>
+            <li><button id="clear-btn" class="secondary outline btn-sm">Limpiar</button></li>
             <li>
-                <button id="theme-toggle" class="icon-btn" aria-label="Cambiar tema">
-                    <svg id="sun-icon" class="icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                    <svg id="moon-icon" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                </button>
+                <label for="file-input" class="file-label">
+                    Subir archivo
+                    <input type="file" id="file-input" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+                </label>
             </li>
         </ul>
     </nav>
 
     <main class="container">
+        <div class="app-layout">
 
-        <!-- Zona de pegado (compacta) -->
-        <div class="paste-card">
-            <div id="paste-zone" role="textbox" contenteditable="true" aria-label="Pega aqui tu rango de Excel" tabindex="0"></div>
-            <div class="paste-actions">
-                <button id="convert-btn"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Convertir</button>
-                <span class="action-right">
-                    <button id="clear-btn" class="secondary outline btn-sm">Limpiar</button>
-                    <label for="file-input" class="file-label">
-                        Subir archivo
-                        <input type="file" id="file-input" accept=".xlsx,.xls,.xlsm,.csv" hidden>
-                    </label>
-                </span>
+            <!-- Columna izquierda: paste + output -->
+            <div class="main-col">
+
+                <!-- Zona de pegado -->
+                <div id="paste-zone" role="textbox" contenteditable="true" aria-label="Pega aqui tu rango de Excel" tabindex="0"></div>
+
+                <!-- Output (aparece tras convertir) -->
+                <section id="output-section" class="hidden">
+                    <div class="md-bar">
+                        <span class="md-bar-title">Markdown</span>
+                        <span class="md-bar-actions">
+                            <button id="copy-btn" class="btn-sm">Copiar</button>
+                            <button id="download-btn" class="secondary outline btn-sm">Descargar .md</button>
+                        </span>
+                    </div>
+                    <textarea id="markdown-output" spellcheck="false" readonly rows="14"></textarea>
+
+                    <details class="preview-details">
+                        <summary>Ver tabla renderizada</summary>
+                        <div id="preview-container" class="preview-scroll"></div>
+                    </details>
+                </section>
             </div>
-        </div>
 
-        <!-- Markdown output (INMEDIATAMENTE debajo, sin scroll) -->
-        <section id="output-section" class="hidden">
-            <div class="md-bar">
-                <span class="md-bar-title">Markdown</span>
-                <span class="md-bar-actions">
-                    <button id="copy-btn" class="btn-sm">Copiar</button>
-                    <button id="download-btn" class="secondary outline btn-sm">Descargar .md</button>
-                </span>
-            </div>
-            <textarea id="markdown-output" spellcheck="false" readonly rows="14"></textarea>
+            <!-- Columna derecha: configuracion -->
+            <aside class="config-col">
+                <h4 class="config-title">Configuracion</h4>
 
-            <!-- Preview colapsable para no estorbar -->
-            <details class="preview-details">
-                <summary>Ver tabla renderizada</summary>
-                <div id="preview-container" class="preview-scroll"></div>
-            </details>
-        </section>
-
-        <!-- Config colapsada -->
-        <details id="options-panel">
-            <summary>Configuracion</summary>
-            <div class="options-inner">
                 <fieldset>
                     <legend>Estructura</legend>
                     <label><input type="checkbox" id="opt-header" checked> Primera fila = encabezado</label>
                     <label><input type="checkbox" id="opt-merges" checked> Propagar celdas combinadas</label>
                     <label><input type="checkbox" id="opt-blanks"> Preservar filas vacias</label>
                 </fieldset>
+
                 <fieldset>
                     <legend>Formato</legend>
                     <label><input type="checkbox" id="opt-compact"> Tabla compacta</label>
                     <label><input type="checkbox" id="opt-pipe-html"> Escape pipe como &amp;#124;</label>
                 </fieldset>
+
                 <fieldset>
                     <legend>Fecha</legend>
                     <select id="opt-date-format">
@@ -82,13 +78,13 @@
                         <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                     </select>
                 </fieldset>
-            </div>
-            <fieldset id="sheet-selector-container" class="hidden">
-                <legend>Hojas</legend>
-                <div id="sheet-checkboxes"></div>
-            </fieldset>
-        </details>
 
+                <fieldset id="sheet-selector-container" class="hidden">
+                    <legend>Hojas</legend>
+                    <div id="sheet-checkboxes"></div>
+                </fieldset>
+            </aside>
+        </div>
     </main>
 
     <script src="./vendor/xlsx.full.min.js"></script>
