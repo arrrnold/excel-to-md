@@ -1,0 +1,283 @@
+:root {
+    /* Vercel Light Theme */
+    --bg: #ffffff;
+    --accents-1: #fafafa;
+    --accents-2: #eaeaea;
+    --accents-3: #999999;
+    --accents-4: #888888;
+    --accents-5: #666666;
+    --accents-6: #444444;
+    --accents-7: #333333;
+    --accents-8: #111111;
+    --foreground: #000000;
+    --border: var(--accents-2);
+    --radius: 8px;
+    --shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.08);
+}
+
+/* El tema oscuro se aplica si el sistema lo prefiere O si la clase .dark está presente */
+@media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+        --bg: #000000;
+        --accents-1: #111111;
+        --accents-2: #333333;
+        --accents-3: #444444;
+        --accents-4: #666666;
+        --accents-5: #888888;
+        --accents-6: #999999;
+        --accents-7: #eaeaea;
+        --accents-8: #fafafa;
+        --foreground: #ffffff;
+        --border: var(--accents-2);
+        --shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 2px 4px rgba(0,0,0,0.4);
+    }
+}
+
+.dark {
+    --bg: #000000;
+    --accents-1: #111111;
+    --accents-2: #333333;
+    --accents-3: #444444;
+    --accents-4: #666666;
+    --accents-5: #888888;
+    --accents-6: #999999;
+    --accents-7: #eaeaea;
+    --accents-8: #fafafa;
+    --foreground: #ffffff;
+    --border: var(--accents-2);
+    --shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 2px 4px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Geist", sans-serif;
+    background-color: var(--bg);
+    color: var(--foreground);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Header al estilo Vercel */
+.main-header {
+    margin-bottom: 4rem;
+}
+
+.header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.theme-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--foreground);
+    transition: all 0.2s ease;
+}
+
+.theme-btn:hover {
+    border-color: var(--foreground);
+}
+
+.theme-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--accents-5);
+    font-size: 1.2rem;
+}
+
+/* Status Bar */
+.status-msg {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+    background: var(--accents-1);
+}
+
+/* Input Section */
+.input-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 3rem;
+}
+
+.paste-zone {
+    width: 100%;
+    min-height: 120px;
+    padding: 2rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.2s ease;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accents-5);
+}
+
+.paste-zone:focus {
+    border-color: var(--foreground);
+}
+
+.paste-zone:empty::before {
+    content: "Pulsa Cmd+V o Ctrl+V para convertir datos de Excel";
+}
+
+.dropzone {
+    border: 1px dashed var(--border);
+    padding: 1.5rem;
+    text-align: center;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    color: var(--accents-5);
+    cursor: pointer;
+}
+
+.dropzone:hover {
+    border-color: var(--foreground);
+    color: var(--foreground);
+}
+
+/* Botones Vercel */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.5rem;
+    height: 40px;
+    border-radius: var(--radius);
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--foreground);
+    color: var(--bg);
+    border: 1px solid var(--foreground);
+}
+
+.btn-primary:hover {
+    background: var(--bg);
+    color: var(--foreground);
+}
+
+.btn-secondary {
+    background: var(--bg);
+    color: var(--accents-5);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--foreground);
+    color: var(--foreground);
+}
+
+/* Options */
+.options-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 3rem;
+    overflow: hidden;
+}
+
+.options-panel summary {
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: var(--accents-1);
+    list-style: none;
+}
+
+.options-grid {
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    background: var(--bg);
+}
+
+/* Output Area */
+.output-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+textarea {
+    width: 100%;
+    height: 300px;
+    background: var(--accents-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--foreground);
+    outline: none;
+}
+
+textarea:focus { border-color: var(--foreground); }
+
+.preview-scroll {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+th {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--accents-5);
+}
+
+td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.hidden { display: none !important; }
+
+@media (min-width: 768px) {
+    .output-grid { grid-template-columns: 1fr 1fr; }
+}
