@@ -41,6 +41,38 @@ const Converter = {
     },
 
     // ════════════════════════════════════════
+    // PARSER CSV — Máquina de estados RFC 4180
+    // ════════════════════════════════════════
+    parseCsvString(text) {
+        const rows = [];
+        let row = [];
+        let cell = '';
+        let inQuotes = false;
+
+        // Normalizar: quitar BOM y unificar saltos de línea
+        const src = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+        for (let i = 0; i < src.length; i++) {
+            const ch = src[i];
+            const next = src[i + 1];
+
+            if (inQuotes) {
+                if (ch === '"' && next === '"') { cell += '"'; i++; }
+                else if (ch === '"')             { inQuotes = false; }
+                else                             { cell += ch; }
+            } else {
+                if (ch === '"' && cell === '') { inQuotes = true; }
+                else if (ch === ',')           { row.push(cell); cell = ''; }
+                else if (ch === '\n')          { row.push(cell); rows.push(row); row = []; cell = ''; }
+                else                           { cell += ch; }
+            }
+        }
+        // Última celda/fila
+        if (cell !== '' || row.length > 0) { row.push(cell); rows.push(row); }
+        return { rows };
+    },
+
+    // ════════════════════════════════════════
     // PARSER HTML — Extrae tabla del clipboard
     // ════════════════════════════════════════
     parseTableHtml(htmlString) {

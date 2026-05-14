@@ -124,6 +124,20 @@ const App = {
             }
         }
 
+        // Prioridad 3: CSV (comas)
+        if (text && text.includes(',')) {
+            const { rows } = Converter.parseCsvString(text);
+            // Validar que parece CSV real: ≥2 filas, ≥2 columnas, columnas consistentes
+            if (rows.length >= 2 && rows[0].length >= 2) {
+                const refCols = rows[0].length;
+                const consistent = rows.filter(r => r.length === refCols).length / rows.length >= 0.8;
+                if (consistent) {
+                    this.processResult({ sheets: [{ name: 'Paste', rows, selected: true }] }, 'CSV');
+                    return;
+                }
+            }
+        }
+
         // Fallback: texto plano separado por líneas
         if (text && text.trim()) {
             const rows = text.trim().split('\n').map(r => r.split('\t'));
